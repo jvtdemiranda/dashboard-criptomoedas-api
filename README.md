@@ -2,7 +2,9 @@
 
 Projeto de portfólio: um pipeline que busca preços de criptomoedas numa
 API pública real (CoinGecko), processa os dados e publica um painel que
-se atualiza sozinho, de hora em hora, sem qualquer intervenção manual.
+se atualiza sozinho, periodicamente, sem qualquer intervenção manual
+(a meta é de hora em hora — na prática o agendador do GitHub às vezes
+atrasa isso, ver bug #2 abaixo).
 
 Diferente do [dashboard financeiro](https://github.com/jvtdemiranda/dashboard-financeiro-PME)
 (dado simulado, pensado pra mostrar tratamento de dado sujo), aqui o
@@ -17,6 +19,14 @@ no próprio painel, na aba Pipeline.
   <img src="docs/screenshot-mercado.png" width="45%" alt="Aba Mercado do painel, com as 15 criptomoedas ordenadas por market cap, preço, variação em 24h e sparkline de 7 dias">
   <img src="docs/screenshot-pipeline.png" width="45%" alt="Aba Pipeline do painel, mostrando quantas execuções já foram registradas e o histórico de preço do Bitcoin ao longo delas">
 </p>
+
+> **Em resumo (pra quem não é da área técnica):** este é um painel que
+> mostra o preço de 15 criptomoedas sempre atualizado, sem eu precisar
+> tocar em nada — o próprio sistema busca os preços novos
+> periodicamente e publica sozinho. Serve como prova de que sei ligar
+> um site a uma fonte de dados externa em tempo real — útil pra
+> qualquer projeto que precise mostrar informação sempre em dia
+> (cotações, estoque, indicadores).
 
 ## Por que esse projeto
 
@@ -151,11 +161,12 @@ Vale registrar porque são evidência de depuração real, não só "rodou sem e
    um token pouco conhecido (`FIGR_HELOC`) na lista, então não dá pra
    assumir que só marcas grandes e "seguras" aparecem ali. Corrigido em
    duas camadas: uma função `escapeHtml()` no JS antes de qualquer
-   inserção via `innerHTML`, e um escape de `<` → `<` no JSON
-   gerado em Python antes de embuti-lo dentro da tag `<script>` (evita
-   que um nome de moeda contendo `</script>` feche a tag e injete HTML
-   novo direto na página). Reproduzi o ataque de novo depois da correção
-   pra confirmar que o payload passa a renderizar só como texto.
+   inserção via `innerHTML`, e a troca do caractere `<` por um código
+   Unicode equivalente no JSON gerado em Python antes de embuti-lo
+   dentro da tag `<script>` (evita que um nome de moeda contendo
+   `</script>` feche a tag e injete HTML novo direto na página).
+   Reproduzi o ataque de novo depois da correção pra confirmar que o
+   payload passa a renderizar só como texto.
 
 ## Stack
 
