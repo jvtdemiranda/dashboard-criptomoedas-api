@@ -79,10 +79,17 @@ propósito:
   (`sparkline_in_7d`), então não faz sentido re-coletar isso sozinho; o
   histórico próprio (aba Pipeline) serve pra provar que o *pipeline*
   roda de verdade, não pra duplicar o gráfico de preço da moeda.
-- **Retry simples na busca**: a API gratuita da CoinGecko tem limite de
-  taxa; `buscar_dados.py` tenta até 3 vezes antes de desistir — como o
-  pipeline roda sozinho (sem alguém pra só rodar de novo na hora), vale
-  a pena essa tentativa extra em vez de falhar na primeira instabilidade.
+- **Retry com backoff exponencial na busca**: a API gratuita da
+  CoinGecko tem limite de taxa; `buscar_dados.py` tenta até 3 vezes
+  antes de desistir, com 2s/4s de espera entre tentativas — repetir sem
+  espera não ajuda contra rate limit (a janela de limite dura muito mais
+  que o tempo entre tentativas instantâneas). Como o pipeline roda
+  sozinho (sem alguém pra só rodar de novo na hora), vale a pena essa
+  tentativa extra em vez de falhar na primeira instabilidade.
+- **Cron em `:17`, não em `:00`**: o GitHub avisa que workflows
+  agendados pra hora cheia atrasam mais, por ser o horário de maior
+  carga dos runners compartilhados — um minuto excêntrico evita esse
+  pico (ver bug real abaixo).
 - **Preços em BRL**: a API aceita `vs_currency=brl` nativamente — evita
   ter que converter USD → BRL por conta própria (e a taxa de câmbio
   ficar desatualizada).
@@ -99,6 +106,28 @@ gráfico — SVG desenhado à mão):
 - **Pipeline** — quantas execuções já foram registradas, desde quando,
   e um gráfico do preço do Bitcoin ao longo das últimas execuções — a
   evidência visual de que o painel realmente se atualiza sozinho.
+
+## Bugs reais encontrados no processo
+
+Vale registrar porque são evidência de depuração real, não só "rodou sem erro":
+
+1. **Cor do sparkline não coerente com a própria linha** — a cor de cada
+   sparkline (verde/vermelho) vinha da variação de 24h, mas o gráfico
+   desenha 7 dias de preço. Resultado: com dado real, 3 das 15 moedas
+   rastreadas (TRX, HYPE, WBT) apareciam com a linha visivelmente
+   **subindo** ao longo da semana, pintada de **vermelho**, porque só
+   as últimas 24h tinham caído — contraditório pra quem olha o gráfico.
+   Só apareceu comparando o sinal da variação com a inclinação real dos
+   pontos do sparkline nos dados já publicados, não seria pego só lendo
+   o código. Corrigido pra a cor vir do primeiro/último ponto do próprio
+   sparkline, coerente com o que o gráfico de fato mostra.
+2. **Cron agendado pra hora cheia atrasa** — a primeira execução
+   agendada (`0 * * * *`) não disparou nem 15 minutos depois do horário
+   previsto. A [documentação do GitHub](https://docs.github.com/actions/using-workflows/events-that-trigger-workflows#schedule)
+   avisa que workflows agendados pra hora cheia sofrem mais atraso, por
+   ser o horário de maior carga dos runners compartilhados de toda a
+   plataforma — não é bug do meu código, mas é uma armadilha real de
+   quem agenda `cron` sem saber disso. Corrigido trocando pra `17 * * * *`.
 
 ## Stack
 

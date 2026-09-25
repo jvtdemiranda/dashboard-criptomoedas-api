@@ -6,10 +6,16 @@ name: Atualizar dados
 # automático na Vercel — o painel sempre mostra a última execução que
 # funcionou (não trava se a CoinGecko cair uma vez, só tenta de novo na
 # próxima janela).
+#
+# Cron em ":17" de propósito, não ":00" — a documentação do GitHub avisa
+# que workflows agendados pra "hora cheia" atrasam mais porque é o
+# horário de maior carga dos runners compartilhados; um minuto
+# excêntrico evita esse pico (bug real: o primeiro deploy deste projeto
+# ficou mais de 15min sem a execução agendada disparar, por causa disso).
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 permissions:
