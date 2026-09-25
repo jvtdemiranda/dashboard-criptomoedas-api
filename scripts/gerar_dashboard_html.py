@@ -54,6 +54,11 @@ def main():
         "historico": historico,
     }
     dados_json = json.dumps(dados_completos, ensure_ascii=False, separators=(",", ":"))
+    # json.dumps não escapa "<" — um nome/símbolo de moeda (dado de
+    # terceiros, vindo da API) contendo literalmente "</script>" fecharia
+    # a tag e injetaria HTML/script arbitrário na página. < é
+    # decodificado de volta pro JS sem problema (é só um JSON válido).
+    dados_json = dados_json.replace("<", "\\u003c")
 
     template = open(template_path, encoding="utf-8").read()
     html_final = template.replace("/*__DATA__*/", dados_json)

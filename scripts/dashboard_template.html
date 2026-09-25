@@ -211,6 +211,15 @@ function fmtDataHora(iso){
   var d = new Date(iso);
   return d.toLocaleString("pt-BR", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"});
 }
+// Os campos de moeda (nome, símbolo, id) vêm da API da CoinGecko —
+// terceiros, fora do nosso controle — e são inseridos via innerHTML.
+// Sem isso, um nome/símbolo com HTML/script embutido executaria no
+// navegador de quem visita o painel.
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
 
 // ---- period label ----
 document.getElementById("period-label").textContent =
@@ -247,8 +256,8 @@ function buildSparkline(container, valores, positivo){
     var cls = positivo ? "up" : "down";
     return '<div class="coin">' +
       '<div class="rank num">' + (i+1) + '</div>' +
-      '<div class="id"><div class="simbolo">' + m.simbolo + '</div><div class="nome">' + m.nome + '</div></div>' +
-      '<div class="spark" id="spark-' + m.id + '"></div>' +
+      '<div class="id"><div class="simbolo">' + escapeHtml(m.simbolo) + '</div><div class="nome">' + escapeHtml(m.nome) + '</div></div>' +
+      '<div class="spark" id="spark-' + escapeHtml(m.id) + '"></div>' +
       '<div class="right"><div class="preco num">' + fmtBRL.format(m.preco) + '</div>' +
       '<span class="pct ' + cls + '">' + fmtPct(pct) + '</span></div>' +
     '</div>';
@@ -263,7 +272,7 @@ function buildSparkline(container, valores, positivo){
     // só as últimas 24h caíram, por exemplo).
     var spark = m.sparkline_7d;
     var positivo = (!spark || spark.length < 2) ? true : spark[spark.length - 1] >= spark[0];
-    buildSparkline(document.getElementById("spark-" + m.id), spark, positivo);
+    buildSparkline(document.getElementById("spark-" + escapeHtml(m.id)), spark, positivo);
   });
 })();
 

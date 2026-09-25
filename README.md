@@ -142,6 +142,20 @@ Vale registrar porque são evidência de depuração real, não só "rodou sem e
    publicando ao mesmo tempo) e um retry com `git fetch` + `git rebase`
    no passo de commit (pra sincronizar e tentar de novo em vez de falhar
    na primeira rejeição de push).
+4. **XSS via dado da própria API** — `nome` e `simbolo` de cada moeda
+   vêm da CoinGecko (terceiro, fora do meu controle) e eram inseridos
+   direto num `innerHTML`, sem escapar. Provei o problema criando um
+   snapshot de teste com `"nome": "<img src=x onerror=...>"` — o payload
+   executava no navegador de quem visse o painel. "Top 15 por market
+   cap" não é garantia de nome confiável: o próprio dado real já trouxe
+   um token pouco conhecido (`FIGR_HELOC`) na lista, então não dá pra
+   assumir que só marcas grandes e "seguras" aparecem ali. Corrigido em
+   duas camadas: uma função `escapeHtml()` no JS antes de qualquer
+   inserção via `innerHTML`, e um escape de `<` → `<` no JSON
+   gerado em Python antes de embuti-lo dentro da tag `<script>` (evita
+   que um nome de moeda contendo `</script>` feche a tag e injete HTML
+   novo direto na página). Reproduzi o ataque de novo depois da correção
+   pra confirmar que o payload passa a renderizar só como texto.
 
 ## Stack
 
