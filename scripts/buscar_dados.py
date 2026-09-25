@@ -12,6 +12,7 @@ Primeira etapa do pipeline:
 import csv
 import json
 import os
+import time
 from datetime import datetime, timezone
 
 import requests
@@ -44,9 +45,11 @@ def buscar_moedas() -> list[dict]:
         "price_change_percentage": "24h,7d",
     }
     # A API pública da CoinGecko tem limite de taxa (free tier) — uma
-    # tentativa que falhe com 429 vale a pena repetir uma vez ou duas
-    # antes de desistir, já que o pipeline roda sozinho (sem alguém pra
-    # simplesmente rodar de novo na hora).
+    # tentativa que falhe com 429 vale a pena repetir antes de desistir,
+    # já que o pipeline roda sozinho (sem alguém pra simplesmente rodar
+    # de novo na hora). Repetir sem espera não ajuda contra rate limit
+    # (a janela de limite dura muito mais que o tempo entre tentativas
+    # instantâneas), por isso o backoff exponencial entre elas.
     ultimo_erro = None
     for tentativa in range(1, MAX_TENTATIVAS + 1):
         try:
@@ -57,6 +60,10 @@ def buscar_moedas() -> list[dict]:
         except requests.RequestException as e:
             ultimo_erro = e
             print(f"Tentativa {tentativa}/{MAX_TENTATIVAS} falhou: {e}")
+            if tentativa < MAX_TENTATIVAS:
+                espera = 2 ** tentativa  # 2s, 4s, ...
+                print(f"Aguardando {espera}s antes de tentar de novo...")
+                time.sleep(espera)
     raise RuntimeError(f"Não foi possível buscar dados da CoinGecko após {MAX_TENTATIVAS} tentativas") from ultimo_erro
 
 

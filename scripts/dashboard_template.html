@@ -256,9 +256,14 @@ function buildSparkline(container, valores, positivo){
   lista.innerHTML = html;
 
   DADOS.moedas.forEach(function(m){
-    var pct = m.variacao_24h_pct;
-    var positivo = (pct === null || pct === undefined) ? true : pct >= 0;
-    buildSparkline(document.getElementById("spark-" + m.id), m.sparkline_7d, positivo);
+    // A cor do sparkline reflete a tendência dos próprios 7 dias
+    // desenhados no gráfico (primeiro x último ponto) — não a variação
+    // de 24h, que é uma janela diferente e pode "discordar" visualmente
+    // da forma da linha (uma linha subindo pintada de vermelho porque
+    // só as últimas 24h caíram, por exemplo).
+    var spark = m.sparkline_7d;
+    var positivo = (!spark || spark.length < 2) ? true : spark[spark.length - 1] >= spark[0];
+    buildSparkline(document.getElementById("spark-" + m.id), spark, positivo);
   });
 })();
 
