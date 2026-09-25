@@ -13,6 +13,11 @@ no próprio painel, na aba Pipeline.
 **Publicado em [dashboard-criptomoedas-api.vercel.app](https://dashboard-criptomoedas-api.vercel.app)**
 — atualiza sozinho a cada execução do pipeline.
 
+<p align="center">
+  <img src="docs/screenshot-mercado.png" width="45%" alt="Aba Mercado do painel, com as 15 criptomoedas ordenadas por market cap, preço, variação em 24h e sparkline de 7 dias">
+  <img src="docs/screenshot-pipeline.png" width="45%" alt="Aba Pipeline do painel, mostrando quantas execuções já foram registradas e o histórico de preço do Bitcoin ao longo delas">
+</p>
+
 ## Por que esse projeto
 
 Os outros dois projetos do portfólio mostram tratamento de dado sujo e
