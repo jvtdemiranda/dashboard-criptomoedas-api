@@ -1,0 +1,50 @@
+name: Atualizar dados
+
+# Único workflow que de fato chama a API pública da CoinGecko. Roda de
+# hora em hora sozinho (cron) e também pode ser disparado manualmente. Se
+# a busca ou o commit derem certo, o push nesta branch aciona o deploy
+# automático na Vercel — o painel sempre mostra a última execução que
+# funcionou (não trava se a CoinGecko cair uma vez, só tenta de novo na
+# próxima janela).
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    name: Buscar dados novos e publicar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Buscar dados novos e montar o dashboard
+        run: |
+          set -e
+          cd scripts
+          python buscar_dados.py
+          python gerar_dashboard_html.py
+
+      - name: Commitar e publicar se algo mudou
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data public
+          if git diff --cached --quiet; then
+            echo "Nada mudou desde a última execução."
+            exit 0
+          fi
+          git commit -m "Atualiza dados de mercado (automático)"
+          git push

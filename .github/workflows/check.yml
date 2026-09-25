@@ -1,0 +1,52 @@
+name: Check
+
+# Só valida a parte determinística do pipeline (sem rede): reconstrói
+# public/index.html a partir dos dados já commitados em data/ e falha se
+# der diferente do que está commitado. Não chama a API aqui de propósito
+# — isso ficaria refém da CoinGecko estar de pé a cada push/PR. Quem
+# chama a API de verdade é o workflow "Atualizar dados" (agendado),
+# separado deste.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-atualizado:
+    name: public/index.html está em dia com os dados commitados
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Reconstruir dashboard a partir dos dados já commitados
+        run: |
+          set -e
+          if [ ! -f data/atual.json ]; then
+            echo "Pipeline ainda não rodou nenhuma vez (data/atual.json não existe) — nada pra validar ainda."
+            exit 0
+          fi
+          cd scripts
+          python gerar_dashboard_html.py
+
+      - name: Comparar com o que está commitado
+        run: |
+          set -e
+          if [ ! -f data/atual.json ]; then
+            exit 0
+          fi
+          if ! git diff --quiet -- public; then
+            echo "::error::public/index.html está desatualizado. Rode 'python scripts/gerar_dashboard_html.py' localmente e comite o resultado."
+            git diff --stat -- public
+            exit 1
+          fi
