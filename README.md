@@ -128,6 +128,20 @@ Vale registrar porque são evidência de depuração real, não só "rodou sem e
    ser o horário de maior carga dos runners compartilhados de toda a
    plataforma — não é bug do meu código, mas é uma armadilha real de
    quem agenda `cron` sem saber disso. Corrigido trocando pra `17 * * * *`.
+3. **`git push` rejeitado por corrida entre execuções** — mesmo depois
+   da correção acima, a fila do GitHub ficou tão congestionada que a
+   primeira execução agendada de verdade só rodou ~6h depois do horário
+   previsto. Ela publicou com sucesso (`git push` ok) — só que o GitHub
+   também rodou uma **segunda tentativa da mesma execução**, com
+   checkout preso ao commit de quando ela tinha sido originalmente
+   enfileirada; quando essa segunda tentativa tentou publicar, o remoto
+   já tinha andado (pela primeira tentativa) e o push foi rejeitado
+   (`! [rejected] ... fetch first`), derrubando a execução inteira com
+   `conclusion: failure`. Corrigido com duas camadas: um
+   `concurrency: group` no workflow (pra nunca ter duas execuções
+   publicando ao mesmo tempo) e um retry com `git fetch` + `git rebase`
+   no passo de commit (pra sincronizar e tentar de novo em vez de falhar
+   na primeira rejeição de push).
 
 ## Stack
 

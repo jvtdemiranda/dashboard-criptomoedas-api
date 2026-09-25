@@ -18,6 +18,18 @@ on:
     - cron: "17 * * * *"
   workflow_dispatch:
 
+# Evita duas execuções deste workflow publicando ao mesmo tempo — a
+# primeira execução agendada de verdade (depois de ~6h de fila
+# congestionada) disparou, publicou com sucesso, e o GitHub tentou de
+# novo a MESMA execução (tentativa 2, com checkout antigo de quando ela
+# foi originalmente enfileirada) — o push da tentativa 2 foi rejeitado
+# porque a tentativa 1 já tinha publicado (ver bug real no README).
+# cancel-in-progress: false pra enfileirar, não cancelar — cada execução
+# ainda deve rodar e publicar seu próprio dado, só não em paralelo.
+concurrency:
+  group: atualizar-dados
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -53,4 +65,23 @@ jobs:
             exit 0
           fi
           git commit -m "Atualiza dados de mercado (automático)"
-          git push
+
+          # Retry com rebase: além do concurrency group, isso cobre o
+          # caso de uma execução ter checkout desatualizado (ver
+          # comentário no gatilho do workflow) — se o push for
+          # rejeitado porque o remoto andou, sincroniza e tenta de novo
+          # em vez de falhar a execução inteira.
+          for tentativa in 1 2 3; do
+            if git push; then
+              exit 0
+            fi
+            echo "Push rejeitado (tentativa $tentativa/3) — outra execução deve ter publicado primeiro. Sincronizando..."
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort
+              echo "::error::Conflito ao sincronizar com origin/main — abortando"
+              exit 1
+            fi
+          done
+          echo "::error::Não foi possível publicar depois de 3 tentativas"
+          exit 1
