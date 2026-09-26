@@ -81,6 +81,8 @@
   }
   .tile .label{font-size:11px; font-weight:600; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.04em;}
   .tile .value{font-family:var(--font-mono); font-size:18px; font-weight:600; margin-top:6px; font-variant-numeric:tabular-nums;}
+  .tiles > .tile{min-width:0;}
+  @media (max-width:359px){ .tile .value{font-size:15px;} }
   .tile.accent-brand .value{color:var(--brand);}
 
   .coin{
@@ -155,7 +157,7 @@
 <section class="view" id="view-mercado">
   <div class="tiles">
     <div class="tile accent-brand"><div class="label">Bitcoin</div><div class="value num" id="kpi-btc">—</div></div>
-    <div class="tile"><div class="label">Market cap (top N)</div><div class="value num" id="kpi-mcap">—</div></div>
+    <div class="tile"><div class="label">Market cap (top 15)</div><div class="value num" id="kpi-mcap">—</div></div>
   </div>
 
   <div class="section-title">Mercado (ordenado por market cap)</div>
@@ -200,7 +202,14 @@ var DADOS = /*__DATA__*/;
 // { buscado_em, moeda_base, moedas: [{id,simbolo,nome,preco,variacao_24h_pct,variacao_7d_pct,market_cap,volume_24h,sparkline_7d}], historico: [{buscado_em,moedas_coletadas,preco_bitcoin}] }
 
 var fmtBRL = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL", maximumFractionDigits:2});
-var fmtBRLCompact = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL", notation:"compact", maximumFractionDigits:1});
+var fmtBRLPequeno = new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL", maximumSignificantDigits:4});
+// Moedas abaixo de R$ 1 (ex.: DOGE, SHIB) perderiam os dígitos que importam
+// com 2 casas fixas — abaixo de R$ 0,01 apareceriam como "R$ 0,00".
+function fmtPreco(v){
+  if(v === null || v === undefined) return "—";
+  return Math.abs(v) < 1 ? fmtBRLPequeno.format(v) : fmtBRL.format(v);
+}
+var fmtBRLCompact =new Intl.NumberFormat("pt-BR", {style:"currency", currency:"BRL", notation:"compact", maximumFractionDigits:1});
 
 function fmtPct(v){
   if(v === null || v === undefined) return "—";
@@ -258,7 +267,7 @@ function buildSparkline(container, valores, positivo){
       '<div class="rank num">' + (i+1) + '</div>' +
       '<div class="id"><div class="simbolo">' + escapeHtml(m.simbolo) + '</div><div class="nome">' + escapeHtml(m.nome) + '</div></div>' +
       '<div class="spark" id="spark-' + escapeHtml(m.id) + '"></div>' +
-      '<div class="right"><div class="preco num">' + fmtBRL.format(m.preco) + '</div>' +
+      '<div class="right"><div class="preco num">' + fmtPreco(m.preco) + '</div>' +
       '<span class="pct ' + cls + '">' + fmtPct(pct) + '</span></div>' +
     '</div>';
   }).join("");
@@ -272,7 +281,9 @@ function buildSparkline(container, valores, positivo){
     // só as últimas 24h caíram, por exemplo).
     var spark = m.sparkline_7d;
     var positivo = (!spark || spark.length < 2) ? true : spark[spark.length - 1] >= spark[0];
-    buildSparkline(document.getElementById("spark-" + escapeHtml(m.id)), spark, positivo);
+    // getElementById recebe o id cru: o escape só vale dentro do HTML,
+    // o atributo já é decodificado pelo navegador.
+    buildSparkline(document.getElementById("spark-" + m.id), spark, positivo);
   });
 })();
 

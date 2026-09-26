@@ -1,2 +1,1 @@
 requests>=2.31
-pandas>=2.0
