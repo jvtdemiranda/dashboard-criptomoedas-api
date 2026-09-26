@@ -30,8 +30,8 @@ no próprio painel, na aba Pipeline.
 
 ## Por que esse projeto
 
-Os outros dois projetos do portfólio mostram tratamento de dado sujo e
-front-end. Este mostra a terceira perna do que uma vaga de automação
+O dashboard financeiro e a landing page de serviço mostram tratamento
+de dado sujo e front-end. Este mostra a terceira perna do que uma vaga de automação
 geralmente pede: consumir uma API REST externa de verdade, de forma
 agendada e resiliente — sem alguém precisar rodar nada manualmente pra
 manter os dados em dia.
@@ -167,8 +167,19 @@ Vale registrar porque são evidência de depuração real, não só "rodou sem e
    `</script>` feche a tag e injete HTML novo direto na página).
    Reproduzi o ataque de novo depois da correção pra confirmar que o
    payload passa a renderizar só como texto.
+5. **Achados numa revisão geral depois de publicado** — o card de
+   market cap mostrava literalmente "Market cap (top N)" (o "N" nunca
+   foi trocado por 15); a correção do bug #4 tinha escapado também o id
+   usado em `getElementById`, o que é errado (o navegador já decodifica o
+   atributo — um id com `&` nunca seria encontrado); moedas abaixo de
+   R$ 0,01 apareceriam como "R$ 0,00" (agora usa 4 dígitos
+   significativos abaixo de R$ 1); em telas de 320px o card do Bitcoin
+   estourava a largura da tela; e o `pandas` estava nas dependências sem
+   ser usado por nenhum script, deixando cada execução agendada mais
+   lenta à toa.
 
 ## Stack
 
-Python 3, requests, pandas. Sem framework de front-end (HTML/CSS/JS
-puro, mesmo princípio dos outros dois projetos do portfólio).
+Python 3 e requests (o resto é biblioteca padrão: `json`, `csv`). Sem
+framework de front-end (HTML/CSS/JS puro, mesmo princípio dos outros
+projetos do portfólio).
